@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const authMiddleware = (req, res, next) => {
   try {
@@ -11,7 +12,7 @@ export const authMiddleware = (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    const decoded = jwt.verify(token, env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -31,7 +32,7 @@ export const optionalAuth = (req, res, next) => {
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = decoded;
     }
     next();
@@ -49,19 +50,19 @@ export const generateTokens = (user) => {
       role: user.role,
       companyId: user.company_id,
     },
-    env.JWT_SECRET,
-    { expiresIn: env.JWT_EXPIRES_IN }
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
 
   const refreshToken = jwt.sign(
     { id: user.id },
-    env.JWT_REFRESH_SECRET,
-    { expiresIn: env.JWT_REFRESH_EXPIRES_IN }
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh',
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
 
   return { accessToken, refreshToken };
 };
 
 export const verifyRefreshToken = (token) => {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET);
+  return jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh');
 };

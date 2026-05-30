@@ -8,7 +8,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../context/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),

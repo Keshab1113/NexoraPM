@@ -1,12 +1,13 @@
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { env } from '../config/env.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, env.UPLOAD_DIR);
+    cb(null, process.env.UPLOAD_DIR || 'uploads');
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
@@ -43,7 +44,7 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: env.MAX_FILE_SIZE,
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760,
   },
 });
 

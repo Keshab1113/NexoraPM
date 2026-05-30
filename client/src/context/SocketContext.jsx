@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuthStore, useNotificationStore } from '../store/authStore';
 
@@ -7,39 +7,56 @@ const SocketContext = createContext(null);
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const isConnectedRef = useRef(false);
   const { accessToken, isAuthenticated } = useAuthStore();
   const { addNotification } = useNotificationStore();
 
+  // Separate effect for socket connection to ensure proper token access
   useEffect(() => {
-    if (!isAuthenticated || !accessToken) {
+    // Delay socket connection until auth store is hydrated from localStorage
+    const token = useAuthStore.getState().accessToken;
+
+    if (!token || !isAuthenticated) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
         setIsConnected(false);
+        isConnectedRef.current = false;
       }
       return;
     }
 
     const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
+    // Clean up existing socket if any
+    if (socket) {
+      socket.disconnect();
+    }
+
     const newSocket = io(socketUrl, {
-      auth: { token: accessToken },
+      auth: { token },
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     newSocket.on('connect', () => {
       console.log('Socket connected:', newSocket.id);
       setIsConnected(true);
+      isConnectedRef.current = true;
     });
 
     newSocket.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
       setIsConnected(false);
+      isConnectedRef.current = false;
     });
 
     newSocket.on('connect_error', (error) => {
       console.error('Socket connection error:', error.message);
       setIsConnected(false);
+      isConnectedRef.current = false;
     });
 
     // Listen for notifications
@@ -51,14 +68,12 @@ export const SocketProvider = ({ children }) => {
     // Listen for task updates
     newSocket.on('task:updated', (data) => {
       console.log('Task updated via socket:', data);
-      // Dispatch custom event for TanStack Query to handle
       window.dispatchEvent(new CustomEvent('socket:taskUpdated', { data }));
     });
 
     // Listen for comment additions
     newSocket.on('comment:added', (data) => {
       console.log('Comment added via socket:', data);
-      // Dispatch custom event for TanStack Query to handle
       window.dispatchEvent(new CustomEvent('socket:commentAdded', { data }));
     });
 
@@ -79,13 +94,13 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [isAuthenticated, accessToken, addNotification]);
+  }, [isAuthenticated]);
 
   const emit = useCallback((event, data) => {
-    if (socket && isConnected) {
+    if (socket && isConnectedRef.current) {
       socket.emit(event, data);
     }
-  }, [socket, isConnected]);
+  }, [socket]);
 
   const joinProject = useCallback((projectId) => {
     emit('join:project', projectId);

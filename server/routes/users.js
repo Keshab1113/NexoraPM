@@ -19,11 +19,11 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // User routes
-router.get('/users', rbac('super_admin', 'company_admin', 'manager'), getAllUsers);
-router.get('/users/:id', getUserById);
-router.post('/users', rbac('super_admin', 'company_admin', 'manager'), createUser);
-router.put('/users/:id', rbac('super_admin', 'company_admin', 'manager'), updateUser);
-router.delete('/users/:id', rbac('super_admin', 'company_admin'), deleteUser);
+router.get('/', rbac('super_admin', 'company_admin', 'manager'), getAllUsers);
+router.get('/:id', getUserById);
+router.post('/', rbac('super_admin', 'company_admin', 'manager'), createUser);
+router.put('/:id', rbac('super_admin', 'company_admin', 'manager'), updateUser);
+router.delete('/:id', rbac('super_admin', 'company_admin'), deleteUser);
 
 // Department routes
 router.get('/departments', getDepartments);

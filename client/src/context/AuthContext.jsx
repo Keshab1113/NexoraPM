@@ -13,13 +13,32 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = useAuthStore.getState().accessToken;
+      const refreshToken = useAuthStore.getState().refreshToken;
+
       if (token) {
         try {
           const response = await authApi.getMe();
-          storeLogin(response.data.user, token, useAuthStore.getState().refreshToken);
+          const userData = response.data.user;
+          // Ensure user data is properly hydrated
+          storeLogin(userData, token, refreshToken);
         } catch (error) {
-          console.error('Failed to fetch user:', error);
-          storeLogout();
+          // Token might be expired, try to refresh
+          if (error.response?.status === 401 && refreshToken) {
+            try {
+              const refreshResponse = await authApi.refresh(refreshToken);
+              const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data;
+              // Update store with new tokens
+              useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
+              // Fetch user with new token
+              const userResponse = await authApi.getMe();
+              storeLogin(userResponse.data.user, newAccessToken, newRefreshToken);
+            } catch (refreshError) {
+              console.error('Failed to refresh token:', refreshError);
+              storeLogout();
+            }
+          } else {
+            storeLogout();
+          }
         }
       }
       setLoading(false);
@@ -32,6 +51,7 @@ export const AuthProvider = ({ children }) => {
     const response = await authApi.login({ email, password });
     const { user, accessToken, refreshToken } = response.data;
     storeLogin(user, accessToken, refreshToken);
+    navigate('/dashboard');
     return user;
   };
 
@@ -39,6 +59,7 @@ export const AuthProvider = ({ children }) => {
     const response = await authApi.register(data);
     const { user, accessToken, refreshToken } = response.data;
     storeLogin(user, accessToken, refreshToken);
+    navigate('/dashboard');
     return user;
   };
 

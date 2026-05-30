@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import { env } from '../config/env.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,10 +16,10 @@ const initDatabase = async () => {
   try {
     // Connect without database first
     connection = await mysql.createConnection({
-      host: env.DB_HOST,
-      port: env.DB_PORT,
-      user: env.DB_USER,
-      password: env.DB_PASSWORD,
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
       multipleStatements: true,
     });
 

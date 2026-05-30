@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// ✅ Zustand store with persistence
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -37,11 +38,11 @@ export const useAuthStore = create(
     }),
     {
       name: 'nexorapm-auth',
+      // Only persist tokens and user, not computed isAuthenticated
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )

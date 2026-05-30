@@ -25,9 +25,11 @@ import ProfilePage from './pages/profile/ProfilePage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { user } = useAuthStore();
+  // Check for token existence - the actual validation happens in AuthContext
+  const hasToken = !!useAuthStore.getState().accessToken;
 
-  if (!isAuthenticated) {
+  if (!hasToken) {
     return <Navigate to="/login" replace />;
   }
 
@@ -40,9 +42,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 // Auth Redirect Component
 const AuthRedirect = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const hasToken = !!useAuthStore.getState().accessToken;
 
-  if (isAuthenticated) {
+  if (hasToken) {
     return <Navigate to="/dashboard" replace />;
   }
 
